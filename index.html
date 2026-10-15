@@ -1109,7 +1109,7 @@ var __Html5QrcodeLibrary__;(()=>{var t={449:function(t,e,r){!function(t){"use st
     scannerCallback = callback;
     prepareScanBeep();
     const dialog = $('#scanner-dialog'), session = ++scannerSession;
-    $('#reader').innerHTML = ''; $('#scanner-status').className = 'notice'; $('#scanner-status').textContent = 'Preparando la cámara…'; $('#scanner-dialog>p').textContent = continuous ? 'Cada código agrega una unidad al ticket. Para volver a escanear el mismo, retiralo de la cámara un momento; los artículos distintos se agregan enseguida.' : 'Apuntá al código de barras o QR. Mantenelo enfocado, con buena luz y dentro del cuadro de cámara.'; dialog.showModal();
+    $('#reader').innerHTML = ''; $('#scanner-status').className = 'notice'; $('#scanner-status').textContent = 'Preparando la cámara…'; $('#scanner-dialog>p').textContent = continuous ? 'Cada lectura agrega una unidad al ticket. Hay un segundo mínimo entre lecturas: esperá el pitido antes del siguiente código. Para repetir el mismo artículo, retiralo de la cámara un momento.' : 'Apuntá al código de barras o QR. Mantenelo enfocado, con buena luz y dentro del cuadro de cámara.'; dialog.showModal();
     if (!window.isSecureContext) { $('#scanner-status').className = 'notice error'; $('#scanner-status').textContent = 'La cámara necesita HTTPS. Abrí Mercadito desde su dirección de GitHub Pages. También podés escribir el código o usar un lector conectado.'; return; }
     if (!navigator.mediaDevices?.getUserMedia || !window.Html5Qrcode) { $('#scanner-status').className = 'notice error'; $('#scanner-status').textContent = 'Este navegador no puede abrir el lector. Probá en Chrome o Safari y verificá que tenga permiso para usar la cámara.'; return; }
     scannerStarting = true;
@@ -1120,8 +1120,8 @@ var __Html5QrcodeLibrary__;(()=>{var t={449:function(t,e,r){!function(t){"use st
       const supportedFormats = preferred.map(name => formats[name]).filter(Number.isInteger);
       if (!supportedFormats.length) supportedFormats.push(...new Set(Object.values(formats).filter(Number.isInteger)));
       scanner = new Html5Qrcode('reader', { formatsToSupport: supportedFormats, verbose: false });
-      let lastDetectedCode = '', lastSameCodeSeenAt = 0;
-      const sameCodeReleaseMs = 1200;
+      let lastDetectedCode = '', lastSameCodeSeenAt = 0, lastAcceptedAt = 0;
+      const sameCodeReleaseMs = 1200, minimumScanIntervalMs = 1000;
       await scanner.start({ facingMode: 'environment' }, { fps: 10, aspectRatio: 1.5, disableFlip: false }, decoded => {
         if (session !== scannerSession || !dialog.open) return;
         const code = C.decodeCode(decoded);
@@ -1133,7 +1133,9 @@ var __Html5QrcodeLibrary__;(()=>{var t={449:function(t,e,r){!function(t){"use st
           lastSameCodeSeenAt = now;
           if (elapsed < sameCodeReleaseMs) return;
         }
+        if (continuous && now - lastAcceptedAt < minimumScanIntervalMs) return;
         lastDetectedCode = code; lastSameCodeSeenAt = now;
+        if (continuous) lastAcceptedAt = now;
         const onSuccess = scannerCallback;
         playScanBeep();
         navigator.vibrate?.(60);
