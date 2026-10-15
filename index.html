@@ -815,7 +815,7 @@ var __Html5QrcodeLibrary__;(()=>{var t={449:function(t,e,r){!function(t){"use st
       else { next.invoices.push(invoice); next.nextNumber++; }
       return invoice.id;
     });
-    draft = blankDraft(); persistDraft(); salesQuery = ''; render(); toast(existing ? 'Cambios guardados.' : 'Venta guardada.');
+    draft = blankDraft(); persistDraft(); render(); openReceipt(savedId); toast(existing ? 'Cambios guardados.' : 'Venta guardada. Ya podés revisar el comprobante.');
   }
 
   function productsView() {
@@ -889,15 +889,15 @@ var __Html5QrcodeLibrary__;(()=>{var t={449:function(t,e,r){!function(t){"use st
   }
   async function toggleInvoice(id) {
     const invoice = activeInvoice(id), cancel = invoice.status === 'issued';
-    if (!await confirmAction(cancel ? '¿Anular este comprobante?' : '¿Reactivar este comprobante?', cancel ? 'Se conservará en el historial y dejará de sumar en ventas y ganancia del día.' : 'Volverá a sumar en ventas y ganancia de su fecha.', cancel ? 'Anular' : 'Reactivar')) return;
-    await commit(next => { const i = next.invoices.find(i => i.id === id); if (!i) throw new Error('El comprobante ya no existe.'); i.status = cancel ? 'cancelled' : 'issued'; i.updatedAt = new Date().toISOString(); }); if (cancel) { salesQuery = ''; modal.close(); renderPreserving(); toast('Comprobante anulado.'); return; } renderPreserving(); openReceipt(id); toast('Comprobante reactivado.');
+    if (!await confirmAction(cancel ? '¿Está seguro de que desea anular la factura?' : '¿Reactivar esta factura?', cancel ? 'La factura se conservará en el historial y dejará de sumar en las ventas y ganancias del día.' : 'La factura volverá a sumar en las ventas y ganancias de su fecha.', cancel ? 'Sí, anular' : 'Reactivar')) return;
+    await commit(next => { const i = next.invoices.find(i => i.id === id); if (!i) throw new Error('El comprobante ya no existe.'); i.status = cancel ? 'cancelled' : 'issued'; i.updatedAt = new Date().toISOString(); }); if (cancel) { finishReceiptAction('Factura anulada.'); return; } renderPreserving(); openReceipt(id); toast('Factura reactivada.');
   }
   async function deleteInvoice(id) {
     const i = activeInvoice(id);
-    if (!await confirmAction('¿Eliminar definitivamente?', `Se borrará el comprobante N.º ${invoiceNumber(i.number)} de ${money(i.totalCents)}. También se quitará del resumen diario. El número no se vuelve a usar.`, 'Eliminar comprobante')) return;
+    if (!await confirmAction('¿Está seguro de que desea eliminar la factura?', `Se eliminará definitivamente la factura N.º ${invoiceNumber(i.number)} por ${money(i.totalCents)}. También se quitará del resumen diario y el número no se volverá a usar.`, 'Sí, eliminar factura')) return;
     await commit(next => { next.invoices = next.invoices.filter(i => i.id !== id); });
     if (draft.editingId === id) { draft = blankDraft(); persistDraft(); }
-    salesQuery = ''; modal.close(); renderPreserving(); toast('Comprobante eliminado.');
+    finishReceiptAction('Factura eliminada.');
   }
 
   function summaryView() {
@@ -1043,6 +1043,9 @@ var __Html5QrcodeLibrary__;(()=>{var t={449:function(t,e,r){!function(t){"use st
     if (formDirty && !await confirmAction('¿Cerrar sin guardar?', 'Se perderán los cambios de este formulario.', 'Cerrar sin guardar')) return;
     formDirty = false; modal.close();
   }
+  function finishReceiptAction(message = '') {
+    salesQuery = ''; formDirty = false; modal.close(); route = 'sale'; location.hash = '#sale'; render(); window.scrollTo(0, 0); if (message) toast(message);
+  }
   async function openScanner(callback) {
     if (scannerStarting || $('#scanner-dialog').open) return;
     scannerCallback = callback;
@@ -1116,7 +1119,7 @@ var __Html5QrcodeLibrary__;(()=>{var t={449:function(t,e,r){!function(t){"use st
       case 'edit-product': return openProduct(id);
       case 'delete-product': return deleteProduct(id);
       case 'close-modal': return closeModal();
-      case 'close-receipt': salesQuery = ''; if ($('#sale-search')) $('#sale-search').value = ''; renderCatalog(); return closeModal();
+      case 'close-receipt': return finishReceiptAction();
       case 'open-import': return openImport();
       case 'preview-paste': return loadPastedRows();
       case 'refresh-import': return refreshImport();
