@@ -1060,11 +1060,14 @@ var __Html5QrcodeLibrary__;(()=>{var t={449:function(t,e,r){!function(t){"use st
     try {
       const formats = window.Html5QrcodeSupportedFormats;
       scanner = new Html5Qrcode('reader', { formatsToSupport: [formats.QR_CODE], verbose: false });
-      let detected = false;
+      let detected = false, lastDetectedCode = '';
       await scanner.start({ facingMode: 'environment' }, { fps: 10, aspectRatio: 1.5, disableFlip: false }, decoded => {
-        if (detected || session !== scannerSession || !dialog.open) return;
-        detected = true;
-        const code = C.decodeCode(decoded), onSuccess = scannerCallback;
+        if (session !== scannerSession || !dialog.open) return;
+        const code = C.decodeCode(decoded);
+        // Accept a different QR immediately, even if this browser skipped a no-code callback.
+        if (detected && code === lastDetectedCode) return;
+        detected = true; lastDetectedCode = code;
+        const onSuccess = scannerCallback;
         navigator.vibrate?.(60);
         if (continuous) {
           try {
@@ -1076,7 +1079,7 @@ var __Html5QrcodeLibrary__;(()=>{var t={449:function(t,e,r){!function(t){"use st
           $('#scanner-status').textContent = 'Código leído: ' + code;
           closeScanner().then(() => onSuccess?.(code)).catch(fail);
         }
-      }, () => { if (continuous && session === scannerSession && dialog.open) detected = false; });
+      }, () => { if (continuous && session === scannerSession && dialog.open) { detected = false; lastDetectedCode = ''; } });
       if (session !== scannerSession || !dialog.open) { if (scanner?.isScanning) await scanner.stop(); scanner?.clear(); scanner = null; }
       else $('#scanner-status').textContent = 'Cámara lista. Acercá el código y mantenelo quieto.';
     } catch (err) {
