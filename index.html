@@ -45,6 +45,11 @@
     <div class="dialog-heading"><div><span class="eyebrow">APARIENCIA</span><h2 id="theme-title">Elegí tus colores</h2></div><button type="button" class="icon-btn" data-action="close-palettes" aria-label="Cerrar configuración"><svg class="icon" aria-hidden="true"><use href="#i-close"/></svg></button></div>
     <p class="muted theme-help">La paleta se guarda en este navegador y podés cambiarla cuando quieras.</p>
     <div id="palette-options" class="palette-grid" role="group" aria-label="Paletas de colores"></div>
+    <section class="font-size-setting" aria-labelledby="font-size-title">
+      <h3 id="font-size-title">Tamaño de letra</h3>
+      <p class="muted">Elegí el tamaño que te resulte más cómodo. Se guarda en este navegador.</p>
+      <div id="font-size-options" class="font-size-options" role="group" aria-label="Tamaño de letra"></div>
+    </section>
   </dialog>
   <dialog id="confirm-dialog" aria-labelledby="confirm-title"><h2 id="confirm-title"></h2><p id="confirm-text"></p><div class="dialog-footer"><button class="btn" id="confirm-no" type="button">Cancelar</button><button class="btn danger" id="confirm-yes" type="button">Confirmar</button></div></dialog>
   <div id="toasts" role="status" aria-live="polite"></div>
@@ -769,6 +774,21 @@ var __Html5QrcodeLibrary__;(()=>{var t={449:function(t,e,r){!function(t){"use st
     if (save) { try { localStorage.setItem('mercadito-palette-v1', palette.id); } catch (_) {} }
     return palette;
   }
+  const FONT_SIZES = [{ id: 'normal', name: 'Normal', scale: 1 }, { id: 'large', name: 'Grande', scale: 1.15 }, { id: 'larger', name: 'Muy grande', scale: 1.3 }];
+  function applyFontSize(id, save = true) {
+    const size = FONT_SIZES.find(item => item.id === id) || FONT_SIZES[0];
+    document.documentElement.dataset.fontSize = size.id;
+    document.documentElement.style.setProperty('--font-scale', String(size.scale));
+    if (save) { try { localStorage.setItem('mercadito-font-size-v1', size.id); } catch (_) {} }
+    return size;
+  }
+  let activeFontSize = 'normal';
+  try { activeFontSize = localStorage.getItem('mercadito-font-size-v1') || 'normal'; } catch (_) {}
+  activeFontSize = applyFontSize(activeFontSize, false).id;
+  function renderFontSizeOptions() {
+    const target = $('#font-size-options'); if (!target) return;
+    target.innerHTML = FONT_SIZES.map(size => `<button type="button" class="font-size-option" data-action="choose-font-size" data-font-size="${size.id}" aria-pressed="${size.id === activeFontSize}">${size.name}</button>`).join('');
+  }
   let activePalette = 'original';
   try { activePalette = localStorage.getItem('mercadito-palette-v1') || 'original'; } catch (_) {}
   activePalette = applyPalette(activePalette, false).id;
@@ -864,7 +884,7 @@ var __Html5QrcodeLibrary__;(()=>{var t={449:function(t,e,r){!function(t){"use st
   function activeInvoice(id) { const invoice = state.invoices.find(i => i.id === id); if (!invoice) throw new Error('El ticket ya no existe.'); return invoice; }
   function render() {
     const routeName = routes.find(r => r[0] === route)?.[1] || 'Nuevo ticket';
-    app.innerHTML = `<div class="layout"><aside class="sidebar"><div class="brand"><div class="brand-mark">${icon('bag')}</div><div><strong>mercadito<span style="color:#83a476">.</span></strong><small>Tu negocio, en orden.</small></div></div><div class="nav-label">TU MOSTRADOR</div><nav class="nav" aria-label="Secciones">${routes.map(([key, label, symbol]) => `<a class="nav-btn${key === route ? ' active' : ''}" href="#${key}" ${key === route ? 'aria-current="page"' : ''}>${icon(symbol)}<span>${label}</span></a>`).join('')}</nav><div class="sidebar-bottom"><div class="device-note"><strong><span class="local-dot"></span>Guardado en este equipo</strong>Artículos y tickets quedan en este navegador.<br>Tu copia, desde Datos.</div><div class="sidebar-footer">SIMPLE. COTIDIANO. TUYO.</div></div></aside><div class="workspace"><header class="topbar"><span class="mobile-brand">${icon('bag')}mercadito.</span><span class="topbar-date">${esc(new Intl.DateTimeFormat('es-AR', { weekday: 'long', day: 'numeric', month: 'long' }).format(new Date()))}</span><div class="topbar-business"><span class="local-dot"></span>${esc(state.settings.businessName)}<span class="avatar">${esc(state.settings.businessName.slice(0, 2).toUpperCase())}</span></div><button class="icon-btn appearance-trigger" type="button" data-action="open-palettes" aria-label="Configuración de colores" title="Cambiar colores">${icon('settings')}</button></header><main class="content" id="main" aria-label="${esc(routeName)}">${({ sale: saleView, products: productsView, invoices: invoicesView, summary: summaryView, data: dataView })[route]()}</main></div></div>`;
+    app.innerHTML = `<div class="layout"><aside class="sidebar"><div class="brand"><div class="brand-mark">${icon('bag')}</div><div><strong>mercadito<span style="color:#83a476">.</span></strong><small>Tu negocio, en orden.</small></div></div><div class="nav-label">TU MOSTRADOR</div><nav class="nav" aria-label="Secciones">${routes.map(([key, label, symbol]) => `<a class="nav-btn${key === route ? ' active' : ''}" href="#${key}" ${key === route ? 'aria-current="page"' : ''}>${icon(symbol)}<span>${label}</span></a>`).join('')}</nav><div class="sidebar-bottom"><div class="device-note"><strong><span class="local-dot"></span>Guardado en este equipo</strong>Artículos y tickets quedan en este navegador.<br>Tu copia, desde Datos.</div><div class="sidebar-footer">SIMPLE. COTIDIANO. TUYO.</div></div></aside><div class="workspace"><header class="topbar"><span class="mobile-brand">${icon('bag')}mercadito.</span><span class="topbar-date">${esc(new Intl.DateTimeFormat('es-AR', { weekday: 'long', day: 'numeric', month: 'long' }).format(new Date()))}</span><div class="topbar-business"><span class="local-dot"></span>${esc(state.settings.businessName)}<span class="avatar">${esc(state.settings.businessName.slice(0, 2).toUpperCase())}</span></div><button class="icon-btn appearance-trigger" type="button" data-action="open-palettes" aria-label="Configuración de apariencia y tamaño de letra" title="Configuración de apariencia">${icon('settings')}</button></header><main class="content" id="main" aria-label="${esc(routeName)}">${({ sale: saleView, products: productsView, invoices: invoicesView, summary: summaryView, data: dataView })[route]()}</main></div></div>`;
     if (route === 'sale') { renderCatalog(); renderCart(); }
     if (route === 'products') renderProductsTable();
     if (route === 'invoices') renderInvoicesTable();
@@ -909,7 +929,7 @@ var __Html5QrcodeLibrary__;(()=>{var t={449:function(t,e,r){!function(t){"use st
   function renderCart() {
     const target = $('#cart'); if (!target) return;
     const amounts = safeTotals(), existing = state.invoices.find(i => i.id === draft.editingId);
-    target.innerHTML = `<div class="cart-head"><div class="cart-heading"><h2>${existing ? 'Editar ticket' : 'Nuevo ticket'}</h2><span class="badge">N.º ${invoiceNumber(existing?.number || state.nextNumber)}</span></div></div><div class="cart-meta"><div class="field-row"><div class="field"><label for="sale-date">Fecha y hora</label><input id="sale-date" type="datetime-local" value="${esc(draft.occurredAt)}" min="1900-01-01T00:00" max="2199-12-31T23:59" required></div><div class="field"><label for="sale-payment">Medio de pago</label><select id="sale-payment">${C.PAYMENTS.map(p => `<option ${draft.payment === p ? 'selected' : ''}>${esc(p)}</option>`).join('')}</select></div></div></div><div class="cart-items">${draft.lines.length ? draft.lines.map(line => `<div class="cart-line" data-line="${esc(line.id)}"><div class="cart-line-head"><span class="cart-line-name">${esc(line.description)}</span><button class="icon-btn danger" type="button" data-action="remove-line" data-id="${esc(line.id)}" aria-label="Quitar ${esc(line.description)}">${icon('close')}</button></div><div class="line-controls"><div><label class="field-label small" for="qty-${esc(line.id)}" style="font-size:9px;margin-bottom:3px">Cantidad</label><div class="qty-control"><button type="button" data-action="decrease-line" data-id="${esc(line.id)}" aria-label="Restar una unidad">−</button><input id="qty-${esc(line.id)}" data-quantity="${esc(line.id)}" inputmode="decimal" value="${qty(line.quantityMilli)}" aria-label="Cantidad de ${esc(line.description)}"><button type="button" data-action="increase-line" data-id="${esc(line.id)}" aria-label="Sumar una unidad">+</button></div></div><div class="unit-price"><label for="price-${esc(line.id)}">Precio unitario</label><input id="price-${esc(line.id)}" data-price="${esc(line.id)}" inputmode="decimal" value="${esc(C.inputMoney(line.priceCents))}" aria-label="Precio de ${esc(line.description)}"></div><strong class="line-total num">${safeLineAmount(line)}</strong></div></div>`).join('') : `<div class="cart-empty">${icon('sale')}<strong>El mostrador está listo.</strong><p>Los artículos que agregues aparecen acá.</p></div>`}</div><div class="cart-totals"><div class="total-row"><span>Subtotal</span><strong class="num">${money(amounts.subtotalCents)}</strong></div><div class="total-row"><label for="sale-discount">Descuento</label><div class="discount-input"><span>$</span><input id="sale-discount" inputmode="decimal" value="${esc(C.inputMoney(draft.discountCents))}" aria-label="Descuento en pesos"></div></div>${amounts.error ? `<p class="form-error">${esc(amounts.error)}</p>` : ''}<div class="total-row grand"><span>Total</span><strong class="num">${money(amounts.totalCents)}</strong></div><div class="field"><label for="sale-note">Nota <span class="muted">· opcional</span></label><input id="sale-note" maxlength="1000" value="${esc(draft.note)}" placeholder="Una aclaración para el ticket"></div></div><div class="cart-footer"><button type="button" class="btn primary wide" data-action="save-sale" id="save-sale" ${!draft.lines.length || amounts.error || busy ? 'disabled' : ''}>${icon('check')}${busy ? 'Guardando…' : existing ? 'Guardar cambios' : 'Guardar ticket'}${icon('arrow')}</button>${draft.lines.length || draft.editingId ? `<button type="button" class="btn wide" data-action="clear-sale" style="margin-top:9px">${draft.editingId ? 'Cancelar edición' : 'Vaciar borrador'}</button>` : ''}</div>`;
+    target.innerHTML = `<div class="cart-head"><div class="cart-heading"><h2>${existing ? 'Editar ticket' : 'Nuevo ticket'}</h2><span class="badge">N.º ${invoiceNumber(existing?.number || state.nextNumber)}</span></div></div><div class="cart-meta"><div class="field-row"><div class="field"><label for="sale-date">Fecha y hora</label><input id="sale-date" type="datetime-local" value="${esc(draft.occurredAt)}" min="1900-01-01T00:00" max="2199-12-31T23:59" required></div><div class="field"><label for="sale-payment">Medio de pago</label><select id="sale-payment">${C.PAYMENTS.map(p => `<option ${draft.payment === p ? 'selected' : ''}>${esc(p)}</option>`).join('')}</select></div></div></div><div class="cart-items">${draft.lines.length ? draft.lines.map(line => `<div class="cart-line" data-line="${esc(line.id)}"><div class="cart-line-head"><span class="cart-line-name">${esc(line.description)}</span><button class="icon-btn danger" type="button" data-action="remove-line" data-id="${esc(line.id)}" aria-label="Quitar ${esc(line.description)}">${icon('close')}</button></div><div class="line-controls"><div><label class="field-label small" for="qty-${esc(line.id)}" style="margin-bottom:3px">Cantidad</label><div class="qty-control"><button type="button" data-action="decrease-line" data-id="${esc(line.id)}" aria-label="Restar una unidad">−</button><input id="qty-${esc(line.id)}" data-quantity="${esc(line.id)}" inputmode="decimal" value="${qty(line.quantityMilli)}" aria-label="Cantidad de ${esc(line.description)}"><button type="button" data-action="increase-line" data-id="${esc(line.id)}" aria-label="Sumar una unidad">+</button></div></div><div class="unit-price"><label for="price-${esc(line.id)}">Precio unitario</label><input id="price-${esc(line.id)}" data-price="${esc(line.id)}" inputmode="decimal" value="${esc(C.inputMoney(line.priceCents))}" aria-label="Precio de ${esc(line.description)}"></div><strong class="line-total num">${safeLineAmount(line)}</strong></div></div>`).join('') : `<div class="cart-empty">${icon('sale')}<strong>El mostrador está listo.</strong><p>Los artículos que agregues aparecen acá.</p></div>`}</div><div class="cart-totals"><div class="total-row"><span>Subtotal</span><strong class="num">${money(amounts.subtotalCents)}</strong></div><div class="total-row"><label for="sale-discount">Descuento</label><div class="discount-input"><span>$</span><input id="sale-discount" inputmode="decimal" value="${esc(C.inputMoney(draft.discountCents))}" aria-label="Descuento en pesos"></div></div>${amounts.error ? `<p class="form-error">${esc(amounts.error)}</p>` : ''}<div class="total-row grand"><span>Total</span><strong class="num">${money(amounts.totalCents)}</strong></div><div class="field"><label for="sale-note">Nota <span class="muted">· opcional</span></label><input id="sale-note" maxlength="1000" value="${esc(draft.note)}" placeholder="Una aclaración para el ticket"></div></div><div class="cart-footer"><button type="button" class="btn primary wide" data-action="save-sale" id="save-sale" ${!draft.lines.length || amounts.error || busy ? 'disabled' : ''}>${icon('check')}${busy ? 'Guardando…' : existing ? 'Guardar cambios' : 'Guardar ticket'}${icon('arrow')}</button>${draft.lines.length || draft.editingId ? `<button type="button" class="btn wide" data-action="clear-sale" style="margin-top:9px">${draft.editingId ? 'Cancelar edición' : 'Vaciar borrador'}</button>` : ''}</div>`;
   }
   function updateSaveButton() { const el = $('#save-sale'); if (el) el.disabled = busy || !draft.lines.length || !!safeTotals().error; }
   function addProduct(id) {
@@ -959,7 +979,7 @@ var __Html5QrcodeLibrary__;(()=>{var t={449:function(t,e,r){!function(t){"use st
     const list = state.products.filter(p => (!supplierFilter || p.supplier === supplierFilter) && parts.every(part => C.norm(p.description + ' ' + p.ean + ' ' + p.supplier).includes(part))).sort((a, b) => a.description.localeCompare(b.description, 'es'));
     productsPage = Math.min(productsPage, Math.max(1, Math.ceil(list.length / pageSize)));
     if (!list.length) { target.innerHTML = empty('box', state.products.length ? 'No hay coincidencias.' : 'Un catálogo listo para crecer.', state.products.length ? 'Probá otra descripción, código o proveedor.' : 'Agregá artículos uno por uno o importá tu lista de precios.', button('new-product', 'Crear artículo', 'plus', 'primary')); return; }
-    target.innerHTML = `<div class="table-scroll"><table><thead><tr><th>ARTÍCULO / EAN</th><th class="hide-mobile">LUGAR DE COMPRA</th><th class="align-right">COSTO</th><th class="align-right">PRECIO</th><th class="align-right">ACCIONES</th></tr></thead><tbody>${list.slice((productsPage - 1) * pageSize, productsPage * pageSize).map(p => `<tr><td><strong>${esc(p.description)}</strong><span class="sub mono">${esc(p.ean || 'Sin código EAN')}</span><span class="sub mobile-brand" style="font-size:10px;font-weight:400;letter-spacing:0">${esc(p.supplier)}</span></td><td class="hide-mobile muted">${esc(p.supplier || '—')}</td><td class="align-right nowrap num">${money(p.costCents)}</td><td class="align-right nowrap num"><strong>${money(p.priceCents)}</strong></td><td><div class="row-actions"><button type="button" class="icon-btn" data-action="edit-product" data-id="${esc(p.id)}" aria-label="Editar ${esc(p.description)}">${icon('edit')}</button><button type="button" class="icon-btn danger" data-action="delete-product" data-id="${esc(p.id)}" aria-label="Eliminar ${esc(p.description)}">${icon('trash')}</button></div></td></tr>`).join('')}</tbody></table></div>${pagination('products', productsPage, list.length)}`;
+    target.innerHTML = `<div class="table-scroll"><table><thead><tr><th>ARTÍCULO / EAN</th><th class="hide-mobile">LUGAR DE COMPRA</th><th class="align-right">COSTO</th><th class="align-right">PRECIO</th><th class="align-right">ACCIONES</th></tr></thead><tbody>${list.slice((productsPage - 1) * pageSize, productsPage * pageSize).map(p => `<tr><td><strong>${esc(p.description)}</strong><span class="sub mono">${esc(p.ean || 'Sin código EAN')}</span><span class="sub mobile-brand" style="font-weight:400;letter-spacing:0">${esc(p.supplier)}</span></td><td class="hide-mobile muted">${esc(p.supplier || '—')}</td><td class="align-right nowrap num">${money(p.costCents)}</td><td class="align-right nowrap num"><strong>${money(p.priceCents)}</strong></td><td><div class="row-actions"><button type="button" class="icon-btn" data-action="edit-product" data-id="${esc(p.id)}" aria-label="Editar ${esc(p.description)}">${icon('edit')}</button><button type="button" class="icon-btn danger" data-action="delete-product" data-id="${esc(p.id)}" aria-label="Eliminar ${esc(p.description)}">${icon('trash')}</button></div></td></tr>`).join('')}</tbody></table></div>${pagination('products', productsPage, list.length)}`;
   }
   function pagination(type, page, total) { return `<div class="table-footer"><span>${total} registro${total === 1 ? '' : 's'}</span><div class="pagination">${button(type + '-prev', 'Anterior', '', 'tiny', page === 1 ? 'disabled' : '')}<span>${page} / ${Math.max(1, Math.ceil(total / pageSize))}</span>${button(type + '-next', 'Siguiente', '', 'tiny', page * pageSize >= total ? 'disabled' : '')}</div></div>`; }
   function showModal(html, wide = false) {
@@ -1104,7 +1124,7 @@ var __Html5QrcodeLibrary__;(()=>{var t={449:function(t,e,r){!function(t){"use st
 
   function openImport() {
     importData = null; importPreview = null;
-    showModal(`${modalHeading('TRAÉ TU CATÁLOGO', 'Importar una planilla.')}<p class="muted" style="font-size:12px">Desde Google Sheets: Archivo → Descargar → Excel o CSV. También podés copiar las celdas y pegarlas abajo, incluyendo la fila de encabezados.</p><div class="drop-zone"><label class="field-label" for="import-file">Elegí un archivo Excel, CSV, TSV u ODS</label><input id="import-file" type="file" accept=".xlsx,.xls,.csv,.tsv,.ods,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"><p class="small">Hasta 20 MB y 50.000 filas. No modifica nada hasta que confirmes.</p></div><details><summary class="small muted" style="cursor:pointer">O pegar celdas copiadas de una planilla</summary><div class="field" style="margin-top:12px"><label for="import-paste">Incluí los encabezados en la primera fila</label><textarea id="import-paste" rows="5" placeholder="EAN&#9;Descripción&#9;Costo&#9;Precio de venta&#9;Lugar de compra"></textarea></div>${button('preview-paste', 'Leer las celdas pegadas', '', '', 'style="margin-top:12px"')}</details><p class="form-error" role="alert" style="margin-top:16px"></p><div id="import-options"></div><div id="import-preview-area"></div><div class="dialog-footer"><button type="button" class="btn" data-action="close-modal">Cerrar</button><button type="button" class="btn primary" data-action="apply-import" id="apply-import" disabled>Importar artículos</button></div>`, true);
+    showModal(`${modalHeading('TRAÉ TU CATÁLOGO', 'Importar una planilla.')}<p class="muted small">Desde Google Sheets: Archivo → Descargar → Excel o CSV. También podés copiar las celdas y pegarlas abajo, incluyendo la fila de encabezados.</p><div class="drop-zone"><label class="field-label" for="import-file">Elegí un archivo Excel, CSV, TSV u ODS</label><input id="import-file" type="file" accept=".xlsx,.xls,.csv,.tsv,.ods,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"><p class="small">Hasta 20 MB y 50.000 filas. No modifica nada hasta que confirmes.</p></div><details><summary class="small muted" style="cursor:pointer">O pegar celdas copiadas de una planilla</summary><div class="field" style="margin-top:12px"><label for="import-paste">Incluí los encabezados en la primera fila</label><textarea id="import-paste" rows="5" placeholder="EAN&#9;Descripción&#9;Costo&#9;Precio de venta&#9;Lugar de compra"></textarea></div>${button('preview-paste', 'Leer las celdas pegadas', '', '', 'style="margin-top:12px"')}</details><p class="form-error" role="alert" style="margin-top:16px"></p><div id="import-options"></div><div id="import-preview-area"></div><div class="dialog-footer"><button type="button" class="btn" data-action="close-modal">Cerrar</button><button type="button" class="btn primary" data-action="apply-import" id="apply-import" disabled>Importar artículos</button></div>`, true);
   }
   function extractRows(book, sheetName) {
     const sheet = book.Sheets[sheetName];
@@ -1199,6 +1219,25 @@ var __Html5QrcodeLibrary__;(()=>{var t={449:function(t,e,r){!function(t){"use st
       tone.start(now); tone.stop(now + 0.1);
     } catch (_) { /* A failed beep must not interrupt scanning. */ }
   }
+  function playUnknownScanBeep() {
+    const audio = scanAudioContext;
+    if (!audio || audio.state !== 'running') return;
+    try {
+      const now = audio.currentTime;
+      // Two soft, dissonant descending tones distinguish an unknown item from a read.
+      [[420, 155, 0], [446, 166, 0.035]].forEach(([startHz, endHz, delay]) => {
+        const tone = audio.createOscillator(), volume = audio.createGain();
+        tone.type = 'sawtooth';
+        tone.frequency.setValueAtTime(startHz, now + delay);
+        tone.frequency.exponentialRampToValueAtTime(endHz, now + delay + 0.58);
+        volume.gain.setValueAtTime(0.0001, now + delay);
+        volume.gain.linearRampToValueAtTime(0.075, now + delay + 0.035);
+        volume.gain.exponentialRampToValueAtTime(0.0001, now + delay + 0.62);
+        tone.connect(volume); volume.connect(audio.destination);
+        tone.start(now + delay); tone.stop(now + delay + 0.64);
+      });
+    } catch (_) { /* A failed alert must not interrupt the sale. */ }
+  }
   async function openScanner(callback, continuous = false) {
     if (scannerStarting || $('#scanner-dialog').open) return;
     if (!isPhone) { toast('En computadora, conectá el lector USB y escaneá en el campo.'); return; }
@@ -1233,15 +1272,27 @@ var __Html5QrcodeLibrary__;(()=>{var t={449:function(t,e,r){!function(t){"use st
         lastDetectedCode = code; lastSameCodeSeenAt = now;
         if (continuous) lastAcceptedAt = now;
         const onSuccess = scannerCallback;
-        playScanBeep();
-        navigator.vibrate?.(60);
         if (continuous) {
           try {
-            const message = onSuccess?.(code, true);
+            const result = onSuccess?.(code, true);
+            if (result && typeof result === 'object' && result.found === false) {
+              playUnknownScanBeep(); navigator.vibrate?.([120, 55, 220]);
+              $('#scanner-status').className = 'notice error';
+              $('#scanner-status').textContent = 'Código no encontrado. Cámara cerrada; podés buscar por código o descripción.';
+              closeScanner().then(() => {
+                const input = $('#sale-search');
+                if (input) { input.focus(); input.select(); }
+                toast('Código no encontrado. Buscá el artículo por descripción o cargalo en el catálogo.');
+              }).catch(fail);
+              return;
+            }
+            playScanBeep(); navigator.vibrate?.(60);
+            const message = result && typeof result === 'object' ? result.message : result;
             $('#scanner-status').className = 'notice';
             $('#scanner-status').textContent = (message || 'Código leído: ' + code) + '. Retirá el código para escanear el siguiente.';
           } catch (err) { $('#scanner-status').className = 'notice error'; $('#scanner-status').textContent = err.message || 'No se pudo agregar el artículo.'; }
         } else {
+          playScanBeep(); navigator.vibrate?.(60);
           $('#scanner-status').textContent = 'Código leído: ' + code;
           closeScanner().then(() => onSuccess?.(code)).catch(fail);
         }
@@ -1275,11 +1326,11 @@ var __Html5QrcodeLibrary__;(()=>{var t={449:function(t,e,r){!function(t){"use st
     if (p) {
       addProduct(p.id);
       if (!quiet) { toast('Agregado: ' + p.description); const input = $('#sale-search'); if (input) input.focus(); }
-      return 'Agregado: ' + p.description;
+      return { found: true, message: 'Agregado: ' + p.description };
     }
     salesQuery = code; if ($('#sale-search')) $('#sale-search').value = code; renderCatalog();
     if (!quiet) toast('Ese código todavía no está en tu catálogo.');
-    return 'Código no encontrado: ' + code;
+    return { found: false, message: 'Código no encontrado: ' + code };
   }
 
   function refreshCartAmounts() {
@@ -1316,11 +1367,15 @@ var __Html5QrcodeLibrary__;(()=>{var t={449:function(t,e,r){!function(t){"use st
       case 'edit-product': return openProduct(id);
       case 'delete-product': return deleteProduct(id);
       case 'close-modal': return closeModal();
-      case 'open-palettes': renderPaletteOptions(); $('#theme-dialog').showModal(); return;
+      case 'open-palettes': renderPaletteOptions(); renderFontSizeOptions(); $('#theme-dialog').showModal(); return;
       case 'close-palettes': $('#theme-dialog').close(); return;
       case 'choose-palette': {
         const palette = applyPalette(element.dataset.palette); activePalette = palette.id;
         renderPaletteOptions(); $('#theme-dialog').close(); toast('Paleta aplicada: ' + palette.name + '.'); return;
+      }
+      case 'choose-font-size': {
+        const size = applyFontSize(element.dataset.fontSize); activeFontSize = size.id;
+        renderFontSizeOptions(); return;
       }
       case 'close-receipt': return finishReceiptAction();
       case 'open-import': return openImport();
