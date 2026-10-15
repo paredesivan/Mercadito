@@ -19,6 +19,17 @@
 #theme-dialog{width:min(560px,calc(100% - 28px))}.theme-help{font-size:13px;margin:-7px 0 20px}.palette-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}.palette-option{min-width:0;min-height:76px;padding:12px;border:1px solid var(--line);border-radius:12px;background:var(--white);color:var(--ink);display:flex;align-items:center;justify-content:space-between;gap:10px;text-align:left}.palette-option:hover{border-color:var(--green);background:var(--paper)}.palette-option[aria-pressed="true"]{border:2px solid var(--green);padding:11px;background:var(--mint)}.palette-name{font-size:12px;font-weight:700}.palette-current{display:block;font-size:10px;color:var(--muted);margin-top:4px}.palette-swatches{display:flex;gap:4px;flex:0 0 auto}.palette-swatch{width:17px;height:17px;border-radius:50%;background:var(--swatch);border:1px solid #00000012}.palette-option:focus-visible{outline:3px solid var(--green);outline-offset:2px}
 @media(max-width:730px){.topbar{gap:8px}.topbar-date{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:right;flex:1}.appearance-trigger{width:40px;height:40px}.palette-grid{gap:8px}.palette-option{padding:10px;min-height:72px}.palette-option[aria-pressed="true"]{padding:9px}.palette-name{font-size:11px}.palette-swatch{width:14px;height:14px}}
 @media(max-width:360px){.topbar{padding:0 10px}.topbar-date{font-size:9px}}
+
+/* Scanner dialog: fit the camera and its close action on one mobile screen. */
+#scanner-dialog[open]{box-sizing:border-box;width:min(560px,calc(100% - 24px));max-height:calc(100dvh - 16px);overflow:hidden;display:flex;flex-direction:column;padding:18px 18px max(18px,env(safe-area-inset-bottom))}
+#scanner-dialog .dialog-heading{flex:0 0 auto;margin-bottom:10px}
+#scanner-dialog>p{flex:0 0 auto;margin:0 0 12px;line-height:1.35}
+#scanner-dialog #reader{flex:0 0 auto;width:75%;min-height:0;height:auto;margin:0 auto}
+#scanner-dialog #reader video{display:block;width:100%!important;height:auto!important;max-height:30dvh;object-fit:contain}
+#scanner-dialog #scanner-status{flex:0 0 auto;margin:10px 0 0}
+#scanner-dialog .dialog-footer{flex:0 0 auto;width:100%;margin-top:12px;flex-wrap:nowrap}
+#scanner-dialog .dialog-footer .btn{width:100%;min-height:48px;justify-content:center}
+@media(max-height:650px){#scanner-dialog[open]{padding:12px 14px max(12px,env(safe-area-inset-bottom))}#scanner-dialog .dialog-heading{margin-bottom:7px}#scanner-dialog>p{margin-bottom:8px}#scanner-dialog #reader{width:70%}#scanner-dialog #reader video{max-height:24dvh}#scanner-dialog .dialog-footer{margin-top:8px}}
 </style>
 </head>
 <body>
