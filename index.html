@@ -1087,7 +1087,7 @@ var __Html5QrcodeLibrary__;(()=>{var t={449:function(t,e,r){!function(t){"use st
     if (!isPhone) { toast('En computadora, conectá el lector USB y escaneá en el campo.'); return; }
     scannerCallback = callback;
     const dialog = $('#scanner-dialog'), session = ++scannerSession;
-    $('#reader').innerHTML = ''; $('#scanner-status').className = 'notice'; $('#scanner-status').textContent = 'Preparando la cámara…'; $('#scanner-dialog>p').textContent = continuous ? 'Escaneá un código por vez. Cada lectura agrega ese artículo al ticket; esperá un instante antes del siguiente.' : 'Apuntá al código de barras o QR. Mantenelo enfocado, con buena luz y dentro del cuadro de cámara.'; dialog.showModal();
+    $('#reader').innerHTML = ''; $('#scanner-status').className = 'notice'; $('#scanner-status').textContent = 'Preparando la cámara…'; $('#scanner-dialog>p').textContent = continuous ? 'Cada código agrega una unidad al ticket. Para volver a escanear el mismo, retiralo de la cámara un momento; los artículos distintos se agregan enseguida.' : 'Apuntá al código de barras o QR. Mantenelo enfocado, con buena luz y dentro del cuadro de cámara.'; dialog.showModal();
     if (!window.isSecureContext) { $('#scanner-status').className = 'notice error'; $('#scanner-status').textContent = 'La cámara necesita HTTPS. Abrí Mercadito desde su dirección de GitHub Pages. También podés escribir el código o usar un lector conectado.'; return; }
     if (!navigator.mediaDevices?.getUserMedia || !window.Html5Qrcode) { $('#scanner-status').className = 'notice error'; $('#scanner-status').textContent = 'Este navegador no puede abrir el lector. Probá en Chrome o Safari y verificá que tenga permiso para usar la cámara.'; return; }
     scannerStarting = true;
@@ -1098,13 +1098,20 @@ var __Html5QrcodeLibrary__;(()=>{var t={449:function(t,e,r){!function(t){"use st
       const supportedFormats = preferred.map(name => formats[name]).filter(Number.isInteger);
       if (!supportedFormats.length) supportedFormats.push(...new Set(Object.values(formats).filter(Number.isInteger)));
       scanner = new Html5Qrcode('reader', { formatsToSupport: supportedFormats, verbose: false });
-      let detected = false, lastDetectedCode = '';
+      let lastDetectedCode = '', lastSameCodeSeenAt = 0;
+      const sameCodeReleaseMs = 1200;
       await scanner.start({ facingMode: 'environment' }, { fps: 10, aspectRatio: 1.5, disableFlip: false }, decoded => {
         if (session !== scannerSession || !dialog.open) return;
         const code = C.decodeCode(decoded);
-        // Accept a different QR immediately, even if this browser skipped a no-code callback.
-        if (detected && code === lastDetectedCode) return;
-        detected = true; lastDetectedCode = code;
+        // Lock a scanned code until it has been absent continuously, avoiding duplicate
+        // additions when the decoder briefly loses and reacquires the same barcode.
+        const now = Date.now();
+        if (continuous && code === lastDetectedCode) {
+          const elapsed = now - lastSameCodeSeenAt;
+          lastSameCodeSeenAt = now;
+          if (elapsed < sameCodeReleaseMs) return;
+        }
+        lastDetectedCode = code; lastSameCodeSeenAt = now;
         const onSuccess = scannerCallback;
         navigator.vibrate?.(60);
         if (continuous) {
@@ -1117,7 +1124,7 @@ var __Html5QrcodeLibrary__;(()=>{var t={449:function(t,e,r){!function(t){"use st
           $('#scanner-status').textContent = 'Código leído: ' + code;
           closeScanner().then(() => onSuccess?.(code)).catch(fail);
         }
-      }, () => { if (continuous && session === scannerSession && dialog.open) { detected = false; lastDetectedCode = ''; } });
+      }, () => {});
       if (session !== scannerSession || !dialog.open) { if (scanner?.isScanning) await scanner.stop(); scanner?.clear(); scanner = null; }
       else $('#scanner-status').textContent = 'Cámara lista. Enfocá el código de barras o QR, sin mover el celular.';
     } catch (err) {
