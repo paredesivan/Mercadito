@@ -787,7 +787,11 @@ var __Html5QrcodeLibrary__;(()=>{var t={449:function(t,e,r){!function(t){"use st
   activeFontSize = applyFontSize(activeFontSize, false).id;
   function renderFontSizeOptions() {
     const target = $('#font-size-options'); if (!target) return;
-    target.innerHTML = FONT_SIZES.map(size => `<button type="button" class="font-size-option" data-action="choose-font-size" data-font-size="${size.id}" aria-pressed="${size.id === activeFontSize}">${size.name}</button>`).join('');
+    target.innerHTML = FONT_SIZES.map(size => `<button type="button" class="font-size-option" data-font-size="${size.id}" aria-pressed="${size.id === activeFontSize}">${size.name}</button>`).join('');
+    target.querySelectorAll('[data-font-size]').forEach(button => button.addEventListener('click', () => {
+      activeFontSize = applyFontSize(button.dataset.fontSize).id;
+      target.querySelectorAll('[data-font-size]').forEach(option => option.setAttribute('aria-pressed', String(option.dataset.fontSize === activeFontSize)));
+    }));
   }
   let activePalette = 'original';
   try { activePalette = localStorage.getItem('mercadito-palette-v1') || 'original'; } catch (_) {}
@@ -1372,10 +1376,6 @@ var __Html5QrcodeLibrary__;(()=>{var t={449:function(t,e,r){!function(t){"use st
       case 'choose-palette': {
         const palette = applyPalette(element.dataset.palette); activePalette = palette.id;
         renderPaletteOptions(); $('#theme-dialog').close(); toast('Paleta aplicada: ' + palette.name + '.'); return;
-      }
-      case 'choose-font-size': {
-        const size = applyFontSize(element.dataset.fontSize); activeFontSize = size.id;
-        renderFontSizeOptions(); return;
       }
       case 'close-receipt': return finishReceiptAction();
       case 'open-import': return openImport();
