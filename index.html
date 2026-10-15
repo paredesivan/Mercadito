@@ -708,7 +708,7 @@ var __Html5QrcodeLibrary__;(()=>{var t={449:function(t,e,r){!function(t){"use st
   const pageSize = 25;
   let state = C.defaultState(), db, route = 'sale', busy = false, importData = null, importPreview = null;
   let salesQuery = '', supplierFilter = '', productsQuery = '', productsPage = 1, invoiceQuery = '', invoiceDate = '', invoiceStatus = 'all', invoicesPage = 1, summaryDate = C.today();
-  let scanner = null, scannerSession = 0, scannerCallback = null, scannerStarting = false, formDirty = false, confirmResolve = null;
+  let scanner = null, scannerSession = 0, scannerCallback = null, scannerStarting = false, scanAudioContext = null, formDirty = false, confirmResolve = null;
   const isPhone = /Android|iPhone|iPod|Windows Phone/i.test(navigator.userAgent) || (/Macintosh/i.test(navigator.userAgent) && navigator.maxTouchPoints > 1);
   function scanActionLabel() { return isPhone ? 'Escanear código' : 'Usar lector USB'; }
   let channel;
@@ -1082,10 +1082,32 @@ var __Html5QrcodeLibrary__;(()=>{var t={449:function(t,e,r){!function(t){"use st
   function finishReceiptAction(message = '') {
     salesQuery = ''; formDirty = false; modal.close(); route = 'sale'; location.hash = '#sale'; render(); window.scrollTo(0, 0); if (message) toast(message);
   }
+  function prepareScanBeep() {
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContext) return;
+    try {
+      if (!scanAudioContext) scanAudioContext = new AudioContext();
+      if (scanAudioContext.state === 'suspended') scanAudioContext.resume().catch(() => {});
+    } catch (_) { /* Audio is optional if the browser does not support Web Audio. */ }
+  }
+  function playScanBeep() {
+    const audio = scanAudioContext;
+    if (!audio || audio.state !== 'running') return;
+    try {
+      const now = audio.currentTime, tone = audio.createOscillator(), volume = audio.createGain();
+      tone.type = 'square'; tone.frequency.setValueAtTime(1250, now);
+      volume.gain.setValueAtTime(0.0001, now);
+      volume.gain.linearRampToValueAtTime(0.16, now + 0.008);
+      volume.gain.exponentialRampToValueAtTime(0.0001, now + 0.095);
+      tone.connect(volume); volume.connect(audio.destination);
+      tone.start(now); tone.stop(now + 0.1);
+    } catch (_) { /* A failed beep must not interrupt scanning. */ }
+  }
   async function openScanner(callback, continuous = false) {
     if (scannerStarting || $('#scanner-dialog').open) return;
     if (!isPhone) { toast('En computadora, conectá el lector USB y escaneá en el campo.'); return; }
     scannerCallback = callback;
+    prepareScanBeep();
     const dialog = $('#scanner-dialog'), session = ++scannerSession;
     $('#reader').innerHTML = ''; $('#scanner-status').className = 'notice'; $('#scanner-status').textContent = 'Preparando la cámara…'; $('#scanner-dialog>p').textContent = continuous ? 'Cada código agrega una unidad al ticket. Para volver a escanear el mismo, retiralo de la cámara un momento; los artículos distintos se agregan enseguida.' : 'Apuntá al código de barras o QR. Mantenelo enfocado, con buena luz y dentro del cuadro de cámara.'; dialog.showModal();
     if (!window.isSecureContext) { $('#scanner-status').className = 'notice error'; $('#scanner-status').textContent = 'La cámara necesita HTTPS. Abrí Mercadito desde su dirección de GitHub Pages. También podés escribir el código o usar un lector conectado.'; return; }
@@ -1113,6 +1135,7 @@ var __Html5QrcodeLibrary__;(()=>{var t={449:function(t,e,r){!function(t){"use st
         }
         lastDetectedCode = code; lastSameCodeSeenAt = now;
         const onSuccess = scannerCallback;
+        playScanBeep();
         navigator.vibrate?.(60);
         if (continuous) {
           try {
