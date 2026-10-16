@@ -5,7 +5,7 @@
   "description": "Pruebas unitarias y E2E para Mercadito",
   "scripts": {
     "test": "npm run test:unit && npm run test:e2e",
-    "test:unit": "node --test tests/unit/*.test.cjs",
+    "test:unit": "node --test tests/Unit/*.test.cjs",
     "test:e2e": "playwright test"
   },
   "devDependencies": {
