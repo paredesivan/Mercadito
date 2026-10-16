@@ -2,7 +2,7 @@
 
 Describe el propósito de cada commit visible en el historial, además de lo comprobable en su parche. “Intento” no significa que haya funcionado. Cuando no hay prueba o el parche no está disponible, lo indico.
 
-## Historial revisado hasta el 15/10/2026
+## Historial revisado hasta el 16/10/2026
 
 | Hora (Argentina) | Commit | Cambio intentado / evidencia y resultado conocido |
 |---|---|---|
@@ -33,9 +33,17 @@ Describe el propósito de cada commit visible en el historial, además de lo com
 | 17:47 | [e6694a8](https://github.com/paredesivan/Mercadito/commit/e6694a84803b02e76f6b42deed6214912398c20e) | Reforzar cálculos/validaciones de tickets y agregar pruebas de lógica. Esas pruebas no verifican cámara ni interfaz real. |
 | 18:17 | [5199652](https://github.com/paredesivan/Mercadito/commit/5199652ac6cc9e21e7cad249cfa9ed00e513dc58) | Añadir opción de tamaño de letra en configuración y guardar elección. |
 | 18:28 | [b5ce294](https://github.com/paredesivan/Mercadito/commit/b5ce294e90a1abfd63b5aa24955100cf67c96228) | Corregir botones de tamaño de letra reportados como inactivos; conectar sus eventos directamente. Intento de corrección pendiente de prueba en la página. |
+| 15/10 19:15 | [1b8fac0](https://github.com/paredesivan/Mercadito/commit/1b8fac001aa5469d9f27f7d70c00d0488f16f90f) | Agregar este registro al repositorio. Cambio administrativo; no modifica la aplicación. |
+| 16/10 11:56 | [752cb61](https://github.com/paredesivan/Mercadito/commit/752cb617721cb8c92d55d915fc28572a245de63f) | Unificar el filtro de proveedores sin distinguir mayúsculas/minúsculas. Las opciones y la comparación usan el nombre normalizado; el cambio está en el código. Todavía no tenía pruebas automáticas de interfaz. |
 
 ## Actualización a futuro
 
 Cuando me pidas un cambio en Mercadito, revisaré el historial actualizado y agregaré una fila con el commit, el objetivo, el cambio comprobable y el resultado conocido. Si el parche no está disponible o no hay prueba, quedará explícito en el registro.
 
-El corte de esta revisión es b5ce294. El commit que agrega este registro es administrativo, no una corrección funcional solicitada.
+La revisión llega hasta 752cb61. El registro también incluye 1b8fac0, que lo agregó al repositorio como cambio administrativo.
+
+## Pruebas preparadas — 16/10/2026 (pendientes de subir)
+
+Por pedido del usuario se preparó un paquete con pruebas unitarias para la lógica de `MercaditoCore`, verificación de sintaxis, ejecución de las 10 autopruebas existentes y cuatro recorridos E2E con Chromium. Una GitHub Action correrá el conjunto en cada `push`, pull request y ejecución manual.
+
+**Verificación local:** 13/13 pruebas unitarias y 4/4 E2E aprobadas sobre el estado de `main` (752cb61). El paquete todavía no está subido al repositorio, por lo que la Action aún no tiene una ejecución en GitHub.
