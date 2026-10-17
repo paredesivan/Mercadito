@@ -47,3 +47,9 @@ La revisión llega hasta 752cb61. El registro también incluye 1b8fac0, que lo a
 Por pedido del usuario se preparó un paquete con pruebas unitarias para la lógica de `MercaditoCore`, verificación de sintaxis, ejecución de las 10 autopruebas existentes y cuatro recorridos E2E con Chromium. Una GitHub Action correrá el conjunto en cada `push`, pull request y ejecución manual.
 
 **Verificación local:** 13/13 pruebas unitarias y 4/4 E2E aprobadas sobre el estado de `main` (752cb61). El paquete todavía no está subido al repositorio, por lo que la Action aún no tiene una ejecución en GitHub.
+
+## Ampliación de integridad — 17/10/2026 (pendiente de subir)
+
+Base inspeccionada: 745bafe7b00729430df77824d7d792a366bbb396. Se preparan dos archivos nuevos sin modificar las pruebas anteriores: `tests/Unit/integridad.test.cjs` (51 casos nuevos; 300 escenarios de cálculo dentro de uno de ellos) y `tests/e2e/integridad.spec.cjs` (5 recorridos nuevos). El workflow conserva disparadores push/PR/manual, separa unitarias y E2E, prueba dos zonas horarias y guarda informes de navegador.
+
+Resultado local: 64/64 pruebas unitarias aprobadas en UTC y Argentina. Los 9 E2E se descubren; no se pudieron ejecutar porque Chromium no puede iniciarse en este entorno. Validación funcional pendiente en GitHub. No se modificó directamente el repositorio; sin commit nuevo asignado todavía. Detalle de alcance y carga en LEEME_PRUEBAS_INTEGRIDAD.md.
