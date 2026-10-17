@@ -9,24 +9,49 @@ permissions:
   contents: read
 
 jobs:
-  pruebas:
-    name: Unitarias y E2E
+  integridad:
+    name: Integridad de datos (${{ matrix.timezone }})
     runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        timezone: [UTC, America/Argentina/Buenos_Aires]
+    env:
+      TZ: ${{ matrix.timezone }}
     steps:
-      - name: Descargar el repositorio
-        uses: actions/checkout@v5
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+      - name: Ejecutar todas las pruebas unitarias, anteriores y nuevas
+        run: node --test tests/Unit/*.test.cjs
 
-      - name: Configurar Node.js
-        uses: actions/setup-node@v5
+  navegador:
+    name: Recorridos E2E e integridad persistida
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      TZ: America/Argentina/Buenos_Aires
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: npm
-
       - name: Instalar dependencias
         run: npm ci
-
-      - name: Instalar Chromium para Playwright
+      - name: Instalar Chromium
         run: npx playwright install --with-deps chromium
-
-      - name: Ejecutar pruebas unitarias y E2E
-        run: npm test
+      - name: Ejecutar todos los E2E y generar informe
+        run: npx playwright test --reporter=list,html
+      - name: Conservar informe y evidencia de fallos
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: informe-pruebas-mercadito
+          path: |
+            playwright-report/
+            test-results/
+          if-no-files-found: warn
+          retention-days: 14
