@@ -1,0 +1,34 @@
+'use strict';
+const {test}=require('node:test');
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const path=require('node:path');
+const vm=require('node:vm');
+const html=fs.readFileSync(path.join(__dirname,'../../index.html'),'utf8');
+const context=vm.createContext({crypto:require('node:crypto').webcrypto,URL});
+vm.runInContext(html.match(/<script id="mercadito-core">([\s\S]*?)<\/script>/)[1],context);
+const C=context.MercaditoCore;
+const clone=x=>JSON.parse(JSON.stringify(x));
+const line=()=>({id:'r1',productId:'p1',ean:'000123',description:'Jabón ñ',supplier:'SEMAC',priceCents:1999,costCents:1100,quantityMilli:1500});
+const draft=()=>({occurredAt:'2026-10-17T23:59',lines:[line()],discountCents:100,payment:'Efectivo'});
+function backup(){const state=C.defaultState();state.products=[C.makeProduct({ean:'000123',description:'Jabón ñ',cost:'11',price:'19,99',supplier:'SEMAC'})];state.invoices=[C.buildInvoice(draft(),7)];return {format:'mercadito-backup',version:1,state};}
+const columns={ean:0,description:1,cost:2,price:3,supplier:4};
+const headers=['EAN','Descripción','Costo','Precio','Proveedor'];
+
+for(const value of [NaN,Infinity,-Infinity,-1,'','abc',C.MAX_MONEY/100+1]) test(`importes inválidos: ${String(value)}`,()=>assert.throws(()=>C.cents(value)));
+for(const value of [0,-1,NaN,Infinity,'0,0001',1000001]) test(`cantidades inválidas: ${String(value)}`,()=>assert.throws(()=>C.quantity(value)));
+for(const field of ['quantityMilli','costCents','priceCents']) for(const value of [-1,1.5,NaN]) test(`ticket rechaza ${field}=${value}`,()=>{const d=draft();d.lines[0][field]=value;assert.throws(()=>C.buildInvoice(d,1));});
+for(const value of ['2026-02-29T12:00','2026-04-31T12:00','2026-10-17T24:00','2026-10-17T12:60','1899-12-31T12:00','2200-01-01T12:00']) test(`fecha inválida: ${value}`,()=>assert.equal(C.validDateTime(value),false));
+for(const field of ['subtotalCents','totalCents','costCents','profitCents']) test(`respaldo detecta alteración de ${field}`,()=>{const b=backup();b.state.invoices[0][field]++;assert.throws(()=>C.validateBackup(b),/inconsistentes/);});
+for(const field of ['id','ean']) test(`respaldo rechaza artículo con ${field} repetido`,()=>{const b=backup(),p=clone(b.state.products[0]);p.id='otro';p.ean='otro';p[field]=b.state.products[0][field];b.state.products.push(p);assert.throws(()=>C.validateBackup(b),/duplicados/);});
+for(const field of ['id','number']) test(`respaldo rechaza ticket con ${field} repetido`,()=>{const b=backup(),i=clone(b.state.invoices[0]);i.id='otro';i.number=8;i[field]=b.state.invoices[0][field];b.state.invoices.push(i);assert.throws(()=>C.validateBackup(b),/repetidos/);});
+test('respaldo JSON conserva artículos, textos, tickets e importes sin modificar origen',()=>{const b=backup(),before=JSON.stringify(b),restored=C.validateBackup(JSON.parse(before));assert.deepEqual(clone(restored.products),clone(b.state.products));assert.deepEqual(clone(restored.invoices),clone(b.state.invoices));assert.equal(restored.nextNumber,8);assert.equal(JSON.stringify(b),before);});
+test('ticket conserva una copia de sus renglones al modificar el borrador',()=>{const d=draft(),i=C.buildInvoice(d,1);d.lines[0].priceCents=1;d.lines[0].description='cambiado';assert.equal(i.lines[0].priceCents,1999);assert.equal(i.lines[0].description,'Jabón ñ');});
+test('editar producto conserva identidad y fecha de creación',()=>{const p=backup().state.products[0],q=C.makeProduct({description:'Nuevo',ean:p.ean,cost:3,price:4},p);assert.equal(q.id,p.id);assert.equal(q.createdAt,p.createdAt);assert.equal(p.description,'Jabón ñ');});
+test('venta con pérdida conserva ganancia negativa',()=>{const d=draft();d.lines[0].costCents=3000;assert.equal(C.buildInvoice(d,1).profitCents,-1601);});
+test('resumen respeta medianoche y excluye anulados',()=>{const a=C.buildInvoice(draft(),1),b=C.buildInvoice({...draft(),occurredAt:'2026-10-18T00:00'},2);const result=C.daySummary([a,b,{...a,status:'cancelled'}],'2026-10-17');assert.equal(result.count,1);assert.equal(result.sales,a.totalCents);assert.equal(C.daySummary([],'2026-10-17').average,0);});
+test('importación separa filas válidas e inválidas sin mutar catálogo ni planilla',()=>{const p=backup().state.products,rows=[headers,['000123','Actualizado',12,20,'semac'],['000124','Nuevo',3,4,'Otro'],['000125','Mal',-1,4,'Otro'],['','','','','']];const before=JSON.stringify({p,rows});const r=C.previewImport(rows,columns,p);assert.equal(r.updated,1);assert.equal(r.added,1);assert.equal(r.errors.length,1);assert.equal(r.errors[0].rowNumber,4);assert.equal(JSON.stringify({p,rows}),before);assert.equal(r.valid[0].product.id,p[0].id);});
+test('importación rechaza mapeo repetido y columnas obligatorias ausentes',()=>{assert.throws(()=>C.previewImport([headers],{...columns,cost:1},[]));assert.throws(()=>C.previewImport([headers],{...columns,price:-1},[]));});
+for(const prefix of ['=','+','-','@','\t','\r']) test(`CSV neutraliza prefijo ${JSON.stringify(prefix)}`,()=>assert(C.csv([[prefix+'1+1']]).includes('"\''+prefix+'1+1"')));
+test('CSV conserva ceros, tildes, saltos y comillas',()=>{const s=C.csv([['000123','Jabón; "ñ"\nnuevo']]);assert.equal(s,'\ufeff"000123";"Jabón; ""ñ""\nnuevo"');});
+test('300 escenarios de cálculo coinciden con referencia independiente y no mutan entradas',()=>{for(let i=1;i<=300;i++){const l={...line(),priceCents:i*37,costCents:i*19,quantityMilli:i*7};const before=JSON.stringify(l),price=Math.floor((l.priceCents*l.quantityMilli+500)/1000),cost=Math.floor((l.costCents*l.quantityMilli+500)/1000),discount=Math.min(i,price),t=C.totals([l],discount);assert.equal(t.subtotalCents,price);assert.equal(t.totalCents,price-discount);assert.equal(t.profitCents,price-discount-cost);assert.equal(JSON.stringify(l),before);}});
